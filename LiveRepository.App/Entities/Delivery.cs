@@ -10,5 +10,6 @@ namespace LiveRepository.App.Entities
         public string MotorcycleCourier { get; set; }
         public List<DeliveryItem> Items { get; set; }
         public decimal TotalPrice { get; set; }
+        public bool Completed { get; set; }
     }
 }
