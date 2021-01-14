@@ -1,9 +1,6 @@
-﻿using Dapper;
+﻿using LiveRepository.App.DomainInterfaces;
 using LiveRepository.App.Entities;
-using LiveRepository.App.Persistence;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Data.SqlClient;
-using Microsoft.EntityFrameworkCore;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -12,16 +9,16 @@ namespace LiveRepository.App.Controllers
     [Route("api/[controller]")]
     public class DeliveriesController : ControllerBase
     {
-        private readonly DeliveryAppContext _deliveryAppContext;
-        public DeliveriesController(DeliveryAppContext deliveryAppContext)
+        private readonly IDeliveryRepository _deliveryRepository;
+        public DeliveriesController(IDeliveryRepository deliveryRepository)
         {
-            _deliveryAppContext = deliveryAppContext;
+            _deliveryRepository = deliveryRepository;
         }
 
         [HttpGet]
         public async Task<IActionResult> GetAllDeliveries()
         {
-            var deliveries = await _deliveryAppContext.Deliveries.ToListAsync();
+            var deliveries = await _deliveryRepository.GetAllAsync();
 
             return Ok(deliveries);
         }
@@ -29,7 +26,7 @@ namespace LiveRepository.App.Controllers
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(int id)
         {
-            var delivery = await _deliveryAppContext.Deliveries.SingleOrDefaultAsync(d => d.Id == id);
+            var delivery = await _deliveryRepository.GetByIdAsync(id);
 
             if (delivery == null)
             {
@@ -44,16 +41,17 @@ namespace LiveRepository.App.Controllers
         {
             delivery.TotalPrice = delivery.Items.Sum(i => i.Quantity * i.Price);
 
-            var script = @"INSERT INTO Deliveries (MotorcycleCourier, TotalPrice) 
-                OUTPUT INSERTED.Id
-                VALUES (@MotorcycleCourier, @TotalPrice);";
-
-            using (var sqlConnection = new SqlConnection(_deliveryAppContext.Database.GetConnectionString()))
-            {
-                delivery.Id = await sqlConnection.QuerySingleAsync<int>(script, new { delivery.MotorcycleCourier, delivery.TotalPrice });
-            }
+            delivery.Id = await _deliveryRepository.AddAsync(delivery);
 
             return CreatedAtAction(nameof(GetById), new { id = delivery.Id }, delivery);
+        }
+
+        [HttpPut("{id}")]
+        public async Task<IActionResult> CompleteDelivery(int id)
+        {
+            await _deliveryRepository.Complete(id);
+
+            return NoContent();
         }
     }
 }

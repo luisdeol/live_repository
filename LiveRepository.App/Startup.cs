@@ -1,4 +1,6 @@
+using LiveRepository.App.DomainInterfaces;
 using LiveRepository.App.Persistence;
+using LiveRepository.App.Repositories;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.HttpsPolicy;
@@ -33,6 +35,7 @@ namespace LiveRepository.App
             var connectionString = Configuration.GetConnectionString("LiveRepoCn");
 
             services.AddDbContext<DeliveryAppContext>(options => options.UseSqlServer(connectionString));
+            services.AddScoped<IDeliveryRepository, DeliveryRepository>();
 
             services.AddSwaggerGen(c =>
             {
